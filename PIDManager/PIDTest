@@ -1,0 +1,131 @@
+package OS;
+
+import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Random;
+
+public class PIDTest extends Thread {
+
+	public static void main(String[] args) throws Exception {
+
+		// request users to input the numbers for the #of threads, life time of program
+		// and threads
+		System.out.println("Input the number of threads you will make~^^");
+		Scanner sc1 = new Scanner(System.in);
+		int num = sc1.nextInt();
+
+		System.out.println("Input the lifetime of program~^^");
+		Scanner sc2 = new Scanner(System.in);
+		int life_prog = sc2.nextInt();
+		
+		System.out.println("Input the liftime of threads~^^");
+		Scanner sc3 = new Scanner(System.in);
+		int life_thr = sc3.nextInt();
+		// read the input
+	
+
+		// print out the results
+		System.out.println("The number of threads : " + num);
+		System.out.println("life time of the program : " + life_prog);
+		System.out.println("life time of the threads : " + life_thr);
+		System.out.println("--------------------------");
+
+		// to use random function, made the object
+		Random random = new Random();
+
+		// made a list for start time
+		ArrayList<Integer> s_time = new ArrayList<>();
+		
+		
+		// make some attributes as many as the number of threads
+		for (int i = 1; i <= num; i++) {
+			// set the start time randomly
+			// the time should be in the range of lifetime of program and threads
+			int a = random.nextInt(life_prog - life_thr);
+			// add the result in the s_time list
+			s_time.add(a);
+			// sort the s_time list according to an incremental order
+			Collections.sort(s_time);
+
+		}
+		// print out the s_time list
+		System.out.println("s_time : " + s_time);
+		// new object from pidmanager
+		PIDManager pdm = new PIDManager();
+		// set the variables used for time checking (seconds)
+		int sec = 0;
+		int k = 0;
+
+		while (sec < life_prog) {
+			// print out the incremental numbers as 1second pass
+			System.out.println("time : " + sec);
+
+			// check whether a thread's start time and real time (sec) is same or not using
+			// variable k.
+			// variable k checks every seconds, it also ignores previous implementation. so
+			// I set i=k.
+			for (int i = k; i < num; i++) {
+				// even multiple threads can be created at the same start time
+				if ((s_time.get(i) == sec)) {
+					int a = pdm.getPID();
+					//condition for the case no available pids
+					if (a != -1) {
+						Thread thread = new PIDTest(a, life_thr, pdm);
+						// getPID is implemented before the thread is started. 
+						// threads made are printed out with their own pid.
+
+						thread.start();
+					}
+					k++;
+				}
+
+			}
+			// when I tried creating a thread in 0 sec, it stopped.
+			// the solution - starting after passing 1 sec.
+			// after sleeping for a sec, even if a thread is created at 0 sec, it can be
+			// worked.
+			Thread.sleep(1000);
+			sec++;
+			// sleep 위치때문에 한박자씩느려서 뒤로뺌
+		}
+		if (sec == life_prog) {
+
+			System.out.println("-----------exit----------");
+			System.exit(0);
+
+		}
+
+	}
+
+	// make the object to use interface
+	private int PID;
+	private int life_thr;
+	private PIDManager PM;
+
+	public PIDTest(int PID, int life_thr, PIDManager PM) {
+		this.PID = PID;
+		this.life_thr = life_thr;
+		this.PM = PM;
+
+	}
+
+	public void run() {
+
+		try {
+			System.out.println(">>>>>>thread " + PID);
+			// after the time that are set in s_time list is passed, it terminates the
+			// thread.
+			Thread.sleep(life_thr * 1000);
+			// print out the message that the thread is terminated.
+			System.out.println(PID + " terminated. ");
+			// to reuse the PID, it releases terminated PID.
+			PM.releasePID(PID);
+
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+
+		}
+	}
+
+}
